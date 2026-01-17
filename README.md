@@ -5,7 +5,7 @@
 
 A self-contained localhost-based tool to run training scripts via a clickable interface with byobu terminal support.
 
-![UI Screenshot](UI_Example.png)
+![UI Screenshot](UI_example.png)
 
 ## Features
 
