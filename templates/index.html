@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Script Runner</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Compact Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1>Script Runner</h1>
+                <div class="status-indicator" id="status-indicator"></div>
+            </div>
+            <div class="header-right">
+                <label class="toggle-compact">
+                    <input type="checkbox" id="dark-mode-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </header>
+
+        <!-- Main Grid Layout -->
+        <div class="app-grid">
+            <!-- Left Panel: Configuration -->
+            <div class="panel panel-config">
+                <div class="panel-header">
+                    <span class="panel-title">Setup</span>
+                    <button class="btn-icon" id="config-expand" title="Expand">⚙️</button>
+                </div>
+                <div class="panel-body">
+                    <!-- Script Path -->
+                    <div class="form-row">
+                        <input type="text" id="script-path" placeholder="Script path..." class="input-sm">
+                        <button id="browse-script" class="btn-icon" title="Browse">📁</button>
+                        <button id="parse-script" class="btn-sm btn-primary">
+                            <span class="btn-text">Parse</span>
+                            <span class="btn-spinner" style="display: none;">⏳</span>
+                        </button>
+                    </div>
+
+                    <!-- Preset Section - Always Visible -->
+                    <div class="preset-section">
+                        <div class="form-group">
+                            <select id="load-preset" class="input-sm preset-select">
+                                <option value="">Load preset...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row preset-save-row">
+                            <input type="text" id="preset-name" placeholder="New preset name..." class="input-sm" style="flex: 1;">
+                            <button id="save-preset" class="btn-sm btn-save" title="Save current config as preset">💾 Save</button>
+                            <button id="delete-preset" class="btn-sm btn-delete" title="Delete selected preset" style="display: none;">🗑️ Del</button>
+                        </div>
+                    </div>
+
+                    <!-- Session Name - Always Visible -->
+                    <div class="form-row">
+                        <input type="text" id="byobu-session" placeholder="Session (training)" class="input-sm" value="training">
+                    </div>
+
+                    <!-- Advanced Config - Expandable -->
+                    <div class="config-expanded" id="config-expanded" style="display: none;">
+                        <div class="form-row">
+                            <textarea id="pre-command" rows="2" placeholder="Pre-commands..." class="input-sm"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <input type="text" id="log-dir" placeholder="Log directory..." class="input-sm">
+                            <label class="checkbox-inline">
+                                <input type="checkbox" id="save-logs" checked>
+                                <span>Save</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel: Arguments -->
+            <div class="panel panel-args">
+                <div class="panel-header">
+                    <span class="panel-title">Arguments <span id="args-count" class="count-badge"></span></span>
+                    <div class="toolbar-compact">
+                        <input type="text" id="args-search" placeholder="Search..." class="search-sm">
+                        <button id="clear-all-args" class="btn-icon" title="Clear All">🗑️</button>
+                        <button id="reset-defaults" class="btn-icon" title="Reset">↺</button>
+                    </div>
+                </div>
+                <div class="panel-body panel-scroll" id="args-container">
+                    <div id="args-form"></div>
+                    <div id="args-empty" class="empty-state">
+                        Parse a script to see arguments
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Preview & History -->
+            <div class="panel panel-output">
+                <div class="panel-header">
+                    <div class="tab-mini">
+                        <button class="tab-mini-btn active" data-tab="preview">Preview</button>
+                        <button class="tab-mini-btn" data-tab="history">History</button>
+                    </div>
+                    <button id="copy-command" class="btn-icon" title="Copy">📋</button>
+                </div>
+                <div class="panel-body panel-scroll">
+                    <!-- Preview Content -->
+                    <div class="tab-mini-content active" id="preview-content">
+                        <textarea id="comment" rows="1" placeholder="Comment..." class="input-sm comment-box"></textarea>
+                        <div class="command-preview" id="command-preview">No command yet</div>
+                    </div>
+                    <!-- History Content -->
+                    <div class="tab-mini-content" id="history-content">
+                        <div id="history-list"></div>
+                        <div id="history-empty" class="empty-state" style="display: block;">No command history yet</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div class="action-bar" id="action-bar" style="display: none;">
+            <button id="run-command" class="btn-run">
+                <span class="btn-text">▶ Run in Byobu</span>
+                <span class="btn-spinner" style="display: none;">⏳</span>
+            </button>
+            <div id="status-message" class="status-message"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Config Expanded Modal -->
+    <div id="config-modal" class="modal" style="display: none;">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Configuration</h3>
+                <button class="btn-close" onclick="closeConfigModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Pre-command:</label>
+                    <textarea id="pre-command-modal" rows="3" class="input-sm"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Byobu Session:</label>
+                    <input type="text" id="byobu-session-modal" class="input-sm">
+                </div>
+                <div class="form-group">
+                    <label>Log Directory:</label>
+                    <input type="text" id="log-dir-modal" class="input-sm">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="save-logs-modal">
+                        <span>Save logs to file</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm" onclick="closeConfigModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Browser Modal -->
+    <div id="file-browser-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📁 Browse Script</h3>
+                <button class="btn-close" onclick="closeFileBrowser()">×</button>
+            </div>
+            <div class="file-browser-toolbar">
+                <div class="file-browser-breadcrumbs" id="file-browser-breadcrumbs"></div>
+                <div class="file-browser-actions">
+                    <button class="btn-sm" id="file-browser-parent">⬆ Up</button>
+                    <button class="btn-sm" id="file-browser-home">🏠</button>
+                    <button class="btn-sm" id="file-browser-refresh">🔄</button>
+                </div>
+            </div>
+            <div class="file-browser-body">
+                <div class="file-browser-sidebar">
+                    <div class="file-browser-sidebar-section">
+                        <h4>⭐ Favorites</h4>
+                        <div id="file-browser-favorites" class="file-browser-quick-list"></div>
+                        <button class="btn-sm" id="add-to-favorites" style="width: 100%; margin-top: 8px;">+</button>
+                    </div>
+                    <div class="file-browser-sidebar-section">
+                        <h4>🕐 Recent</h4>
+                        <div id="file-browser-recent" class="file-browser-quick-list"></div>
+                    </div>
+                </div>
+                <div class="file-browser-main">
+                    <div class="file-browser-list" id="file-browser-list"></div>
+                    <div class="file-browser-empty" id="file-browser-empty" style="display: none;">No files</div>
+                    <div class="file-browser-loading" id="file-browser-loading" style="display: none;">Loading...</div>
+                </div>
+            </div>
+            <div class="file-browser-footer">
+                <input type="text" id="file-browser-selected-path" readonly placeholder="No file selected..." class="input-sm" style="flex: 1;">
+                <button class="btn-sm" onclick="closeFileBrowser()">Cancel</button>
+                <button class="btn-sm btn-primary" id="file-browser-select" disabled>Select</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
