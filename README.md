@@ -145,3 +145,7 @@ The `data/` directory is excluded from version control (.gitignored) as it conta
 - **Script not parsing**: Make sure your script uses `argparse.ArgumentParser` and the parser variable is named `parser`
 - **Byobu not found**: Install byobu: `sudo apt-get install byobu` (or equivalent)
 - **Command not running**: Check that the script path is correct and accessible
+
+## Support
+
+If you find this extension useful, consider buying me a coffee! [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-yellow.svg)](https://buymeacoffee.com/paraskoundal) 
