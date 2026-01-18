@@ -289,12 +289,20 @@ async function loadConfig() {
         const response = await fetch('/api/config');
         const config = await response.json();
 
+        // Only fill fields if there's actual saved data (not defaults)
+        // Check if this is a fresh config or has actual user data
+        const hasUserConfig = config.pre_command || config.log_dir;
+
         if (config.pre_command) {
             document.getElementById('pre-command').value = config.pre_command;
         }
-        if (config.byobu_session) {
+
+        // Only override the default "training" value if user has explicitly saved a different session name
+        // and there's other config data (indicating this isn't a fresh install)
+        if (hasUserConfig && config.byobu_session && config.byobu_session !== 'training') {
             document.getElementById('byobu-session').value = config.byobu_session;
         }
+
         if (config.log_dir) {
             document.getElementById('log-dir').value = config.log_dir;
             const logPathDisplay = document.getElementById('log-path-display-removed');
@@ -307,6 +315,8 @@ async function loadConfig() {
                 logPathDisplay.textContent = './logs/command_log.txt (default if enabled)';
             }
         }
+
+        console.log('Config loaded:', hasUserConfig ? 'User config found' : 'Using defaults');
     } catch (error) {
         console.error('Error loading config:', error);
     }

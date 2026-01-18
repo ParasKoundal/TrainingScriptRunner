@@ -45,20 +45,39 @@ os.makedirs(DEFAULT_LOG_DIR, exist_ok=True)
 def load_config():
     """Load configuration from JSON file."""
     global DEFAULT_ENV_SCRIPT, LOG_DIR, LOG_FILE
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-            DEFAULT_ENV_SCRIPT = config.get('pre_command', None)
-            # Only set LOG_DIR if explicitly configured, otherwise leave as None
-            log_dir = config.get('log_dir')
-            if log_dir:
-                LOG_DIR = log_dir
-                LOG_FILE = os.path.join(LOG_DIR, 'command_log.txt')
-            else:
-                LOG_DIR = None
-                LOG_FILE = None
-            return config
-    return {'pre_command': None, 'log_dir': None, 'default_script_path': None}
+
+    # Default config values
+    default_config = {
+        'pre_command': None,
+        'byobu_session': 'training',
+        'log_dir': None,
+        'default_script_path': None
+    }
+
+    if os.path.exists(CONFIG_FILE) and os.path.getsize(CONFIG_FILE) > 0:
+        try:
+            with open(CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+                # Merge with defaults to ensure all keys exist
+                for key, value in default_config.items():
+                    if key not in config:
+                        config[key] = value
+
+                DEFAULT_ENV_SCRIPT = config.get('pre_command', None)
+                # Only set LOG_DIR if explicitly configured, otherwise leave as None
+                log_dir = config.get('log_dir')
+                if log_dir:
+                    LOG_DIR = log_dir
+                    LOG_FILE = os.path.join(LOG_DIR, 'command_log.txt')
+                else:
+                    LOG_DIR = None
+                    LOG_FILE = None
+                return config
+        except (json.JSONDecodeError, ValueError):
+            # If config file is corrupted, return defaults
+            print(f"Warning: Config file {CONFIG_FILE} is corrupted. Using defaults.")
+
+    return default_config
 
 def save_config(config):
     """Save configuration to JSON file."""
